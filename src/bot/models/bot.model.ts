@@ -37,7 +37,7 @@ export class Bot extends Model<Bot, IBotCreationAttr> {
   declare name: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.ENUM("sahiy", "sabrli"),
   })
   declare role: string;
 
@@ -45,6 +45,11 @@ export class Bot extends Model<Bot, IBotCreationAttr> {
     type: DataType.STRING,
   })
   declare phone_number: string;
+
+  @Column({
+    type: DataType.STRING,
+  })
+  declare location: string;
 
   @Column({
     type: DataType.STRING,

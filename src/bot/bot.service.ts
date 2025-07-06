@@ -2,10 +2,17 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Bot } from "./models/bot.model";
 import { Context, Markup } from "telegraf";
+import { Sahiy } from "./Sahiy/model/sahiy.model";
+import { Op } from "sequelize";
+import { Sabrli } from "./Sabrli/model/sabrli.model";
 
 @Injectable()
 export class BotService {
-  constructor(@InjectModel(Bot) private readonly botModel: typeof Bot) {}
+  constructor(
+    @InjectModel(Bot) private readonly botModel: typeof Bot,
+    @InjectModel(Sahiy) private readonly sahiyModel: typeof Sahiy,
+    @InjectModel(Sabrli) private readonly sabrliModel: typeof Sabrli
+  ) {}
 
   async start(ctx: Context) {
     try {
@@ -20,7 +27,7 @@ export class BotService {
           language_code: ctx.from?.language_code!,
           username: ctx.from?.username!,
         });
-        ctx.reply("Qaysi ro'ldan ro'yxatdan o'tmoqchisiz?", {
+        await ctx.reply("Qaysi ro'ldan ro'yxatdan o'tmoqchisiz?", {
           reply_markup: {
             inline_keyboard: [
               [
@@ -62,100 +69,6 @@ export class BotService {
     }
   }
 
-  async onClickSahiy(ctx: Context) {
-    try {
-      const callbackData = ctx.callbackQuery!["data"];
-      const user_id = parseInt(callbackData.split("_")[1]);
-      const user = await this.botModel.findOne({ where: { user_id } });
-
-      if (!user) {
-        await ctx.reply("Siz hali ro'yxatdan o'tmagansiz", {
-          parse_mode: "HTML",
-          ...Markup.keyboard(["/start"]).resize().oneTime(),
-        });
-      } else {
-        user.role = "sahiy";
-        user.last_state = "name";
-        await user.save();
-        await ctx.reply("Ismingizni kiriting:");
-      }
-    } catch (error) {
-      console.log("Error on Click Sahiy", error);
-    }
-  }
-
-  async onClickSabrli(ctx: Context) {
-    try {
-      const callbackData = ctx.callbackQuery!["data"];
-      const user_id = parseInt(callbackData.split("_")[1]);
-      const user = await this.botModel.findOne({ where: { user_id } });
-
-      if (!user) {
-        await ctx.reply("Siz hali ro'yxatdan o'tmagansiz", {
-          parse_mode: "HTML",
-          ...Markup.keyboard(["/start"]).resize().oneTime(),
-        });
-      } else {
-        user.role = "sabrli";
-        user.last_state = "name";
-        await user.save();
-        await ctx.reply("Ismingizni kiriting:");
-      }
-    } catch (error) {
-      console.log("Error on Click Sabrli", error);
-    }
-  }
-
-  async onText(ctx: Context) {
-    try {
-      const user_id = ctx.from?.id;
-      const user = await this.botModel.findOne({
-        where: { user_id: user_id },
-      });
-
-      if (!user) {
-        await ctx.reply("Siz hali ro'yxatdan o'tmagansiz", {
-          parse_mode: "HTML",
-          ...Markup.keyboard(["/start"]).resize().oneTime(),
-        });
-      } else {
-        if (user.last_state === "name") {
-          if ("text" in ctx.msg) {
-            user.name = ctx.msg.text;
-            user.last_state = "phone_number";
-            await user.save();
-
-            await ctx.reply("Telefon raqamingizni yuboring", {
-              ...Markup.keyboard([
-                Markup.button.contactRequest("Contactni ulashish"),
-              ]).resize(),
-            });
-          }
-        } else if (user.last_state === "location") {
-          if ("text" in ctx.msg && ctx.msg.text === "O'tkazib yuborish") {
-            user.last_state = "completed";
-            await user.save();
-
-            await ctx.reply("Ro'yxatdan o'tish muvaffaqiyatli yakunlandi! 🎉", {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: "Ma'lumotlarni ko'rish",
-                      callback_data: `info_${user_id}`,
-                    },
-                  ],
-                ],
-              },
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.log("Error on Text", error);
-    }
-  }
-
   async onContact(ctx: Context) {
     try {
       const user_id = ctx.from?.id;
@@ -169,10 +82,10 @@ export class BotService {
           ...Markup.keyboard(["/start"]).resize().oneTime(),
         });
       } else {
-        if (user.last_state === "phone_number") {
+        if (user.last_state === "phone") {
           if ("contact" in ctx.msg) {
             user.phone_number = ctx.msg.contact.phone_number;
-            user.last_state = "location";
+            user.last_state = "address";
             await user.save();
 
             await ctx.reply(
@@ -235,12 +148,12 @@ export class BotService {
         await ctx.reply("Foydalanuvchi topilmadi!");
       } else {
         const info = `
-                    📋 **Sizning ma'lumotlaringiz:**
-                    👤 **Ism:** ${user.name || "Kiritilmagan"}
-                    🎭 **Rol:** ${user.role || "Tanlanmagan"}
-                    📱 **Telefon:** ${user.phone_number || "Kiritilmagan"}
-                    📍 **Manzil:** ${user.last_state === "completed" ? "Kiritilgan" : "Kiritilmagan"}
-                    📊 **Holat:** ${user.last_state === "completed" ? "✅ Yakunlangan" : "⏳ Jarayonda"}
+📋 **Sizning ma'lumotlaringiz:**
+👤 **Ism:** ${user.name || "Kiritilmagan"}
+🎭 **Rol:** ${user.role || "Tanlanmagan"}
+📱 **Telefon:** ${user.phone_number || "Kiritilmagan"}
+📍 **Manzil:** ${user.last_state === "finish" ? user.location : "Kiritilmagan"}
+📊 **Holat:** ${user.last_state === "finish" ? "✅ Yakunlangan" : "⏳ Jarayonda"}
         `;
 
         await ctx.reply(info, {
@@ -259,6 +172,104 @@ export class BotService {
       }
     } catch (error) {
       console.log("Error on Show Info", error);
+    }
+  }
+
+  async onText(ctx: Context) {
+    try {
+      const user_id = ctx.from?.id;
+      const user = await this.botModel.findByPk(user_id);
+
+      if (!user) {
+        await ctx.reply("Siz hali ro'yxatdan o'tmagansiz", {
+          parse_mode: "HTML",
+          ...Markup.keyboard(["/start"]).resize().oneTime(),
+        });
+      } else {
+        if ("text" in ctx.message!) {
+          const sahiy = await this.sahiyModel.findOne({
+            where: { user_id, last_state: { [Op.ne]: "finish" } },
+            order: [["id", "DESC"]],
+          });
+
+          const sabrli = await this.sabrliModel.findOne({
+            where: { user_id, last_state: { [Op.ne]: "finish" } },
+            order: [["id", "DESC"]],
+          });
+          if (user.role?.toLowerCase() === "sahiy" && sahiy) {
+            const userInputText = ctx.message.text;
+            switch (sahiy.last_state) {
+              case "name":
+                sahiy.name = userInputText;
+                sahiy.last_state = "phone";
+                await sahiy.save();
+                await ctx.reply("Telefon raqamingizni yuboring", {
+                  ...Markup.keyboard([
+                    Markup.button.contactRequest("Kontaktni ulashish"),
+                  ]).resize(),
+                });
+                break;
+              case "phone":
+                sahiy.phone = userInputText;
+                sahiy.last_state = "location";
+                await sahiy.save();
+                await ctx.replyWithHTML("Manzilingizni kiriting: ");
+                break;
+              case "location":
+                sahiy.location = userInputText;
+                sahiy.last_state = "finish";
+                await sahiy.save();
+                await ctx.reply(
+                  "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi! 🎉",
+                  {
+                    reply_markup: {
+                      inline_keyboard: [
+                        [
+                          {
+                            text: "Muruvvat qilish",
+                            callback_data: `info_${user_id}`,
+                          },
+                        ],
+                      ],
+                    },
+                  }
+                );
+
+                break;
+            }
+          } else if (user.role?.toLowerCase() === "sabrli" && sabrli) {
+            const userInputText = ctx.message.text;
+            switch (sabrli.last_state) {
+              case "name":
+                sabrli.name = userInputText;
+                sabrli.last_state = "phone";
+                await sabrli.save();
+                await ctx.reply("Telefon raqamingizni yuboring", {
+                  ...Markup.keyboard([
+                    Markup.button.contactRequest("Kontaktni ulashish"),
+                  ]).resize(),
+                });
+                break;
+              case "phone":
+                sabrli.phone = userInputText;
+                sabrli.last_state = "address";
+                await sabrli.save();
+                await ctx.replyWithHTML("Manzilingizni kiriting: ");
+                break;
+              case "location":
+                sabrli.location = userInputText;
+                sabrli.last_state = "finish";
+                await sabrli.save();
+                await ctx.reply(
+                  "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi!🎉 Tez orada muruvvat olasiz degan umiddamiz💗"
+                );
+                break;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log("Error on Text", error);
     }
   }
 

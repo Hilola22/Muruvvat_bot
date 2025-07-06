@@ -11,16 +11,6 @@ export class BotUpdate {
     await this.botService.start(ctx);
   }
 
-  @Action(/^sahiy_\d+$/)
-  async onClickSahiy(@Ctx() ctx: Context) {
-    await this.botService.onClickSahiy(ctx);
-  }
-
-  @Action(/^sabrli_\d+$/)
-  async onClickSabrli(@Ctx() ctx: Context) {
-    await this.botService.onClickSabrli(ctx);
-  }
-
   @Action(/^info_\d+$/)
   async onShowInfo(@Ctx() ctx: Context) {
     await this.botService.onShowInfo(ctx);
