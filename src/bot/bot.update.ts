@@ -1,38 +1,51 @@
 import { BotService } from "./bot.service";
 import { Action, Command, Ctx, On, Start, Update } from "nestjs-telegraf";
-import { Context, Markup } from "telegraf";
+import { join } from "path";
+import { createWriteStream, existsSync, mkdirSync } from "fs";
+import { Context } from "telegraf";
+import axios from "axios";
 
 @Update()
 export class BotUpdate {
   constructor(private readonly botService: BotService) {}
+
   @Start()
   async onStart(@Ctx() ctx: Context) {
-    console.log("bot ishga tushdi");
     await this.botService.start(ctx);
   }
 
-  @Action(/^info_\d+$/)
-  async onShowInfo(@Ctx() ctx: Context) {
-    await this.botService.onShowInfo(ctx);
+  @Action(/^(sahiy|sabrli)__\d+$/)
+  async onClickRole(@Ctx() ctx: Context) {
+    await this.botService.ClickRole(ctx);
   }
 
-  @Action(/^restart_\d+$/)
-  async onRestart(@Ctx() ctx: Context) {
-    await this.botService.onRestart(ctx);
+  @Action(/^murojat_yollash__\d+$/)
+  async onClickMurojatYollash(@Ctx() ctx: Context) {
+    await this.botService.onClickMurojatYollash(ctx);
   }
 
   @On("text")
   async onText(@Ctx() ctx: Context) {
-    await this.botService.onText(ctx);
+    await this.botService.text(ctx);
   }
 
   @On("contact")
-  async onContact(@Ctx() ctx: Context) {
-    await this.botService.onContact(ctx);
+  async contact(@Ctx() ctx: Context) {
+    await this.botService.contact(ctx);
   }
 
   @On("location")
-  async onLocation(@Ctx() ctx: Context) {
-    await this.botService.onLocation(ctx);
+  async location(@Ctx() ctx: Context) {
+    await this.botService.location(ctx);
+  }
+
+  @On("photo")
+  async onPhoto(@Ctx() ctx: Context) {
+    this.botService.onPhoto(ctx);
+  }
+
+  @Command("stop")
+  async onStop(@Ctx() ctx: Context) {
+    await this.botService.stop(ctx);
   }
 }

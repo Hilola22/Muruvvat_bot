@@ -7,7 +7,7 @@ import * as cookieParser from "cookie-parser";
 
 async function start() {
   try {
-    const PORT = process.env.PORT ?? 3030;
+    const PORT = process.env.PORT ?? 4040;
     const app = await NestFactory.create(AppModule);
     app.useGlobalPipes(new ValidationPipe());
     app.setGlobalPrefix("api");

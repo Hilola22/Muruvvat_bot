@@ -1,58 +1,56 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+// src/bot/models/bot.model.ts
+
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  PrimaryKey,
+} from "sequelize-typescript";
 
 interface IBotCreationAttr {
   user_id: number;
-  first_name: string;
-  last_name: string;
-  language_code: string;
-  username: string;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  lang?: string;
+  name?: string;
+  role?: string;
+  last_state?: string;
+  status?: boolean;
+  location?: string;
 }
 
-@Table({ tableName: "user" })
+@Table({ tableName: "users", timestamps: false })
 export class Bot extends Model<Bot, IBotCreationAttr> {
-  @Column({
-    type: DataType.BIGINT,
-    primaryKey: true,
-  })
+  @PrimaryKey
+  @Column({ type: DataType.BIGINT })
   declare user_id: number;
 
-  @Column({
-    type: DataType.STRING(50),
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare first_name: string;
 
-  @Column({
-    type: DataType.STRING(50),
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare last_name: string;
 
-  @Column({
-    type: DataType.STRING,
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare lang: string;
 
-  @Column({
-    type: DataType.STRING,
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare name: string;
 
-  @Column({
-    type: DataType.ENUM("sahiy", "sabrli"),
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare role: string;
 
-  @Column({
-    type: DataType.STRING,
-  })
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  declare status: boolean;
+
+  @Column({ type: DataType.STRING, allowNull: true })
   declare phone_number: string;
 
-  @Column({
-    type: DataType.STRING,
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare location: string;
 
-  @Column({
-    type: DataType.STRING,
-  })
+  @Column({ type: DataType.STRING, allowNull: true })
   declare last_state: string;
 }

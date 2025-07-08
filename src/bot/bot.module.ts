@@ -1,19 +1,13 @@
 import { Module } from "@nestjs/common";
 import { BotService } from "./bot.service";
 import { SequelizeModule } from "@nestjs/sequelize";
-import { BotUpdate } from "./bot.update";
 import { Bot } from "./models/bot.model";
-import { SahiyService } from "./Sahiy/sahiy.service";
-import { SahiyUpdate } from "./Sahiy/sahiy.update";
-import { Sahiy } from "./Sahiy/model/sahiy.model";
-import { Sabrli } from "./Sabrli/model/sabrli.model";
-import { SabrliService } from "./Sabrli/sabrli.service";
-import { SabrliUpdate } from "./Sabrli/sabrli.update";
+import { BotUpdate } from "./bot.update";
+import { UserImg } from "./models/user_image.model"
 
 @Module({
-  imports: [SequelizeModule.forFeature([Bot, Sahiy, Sabrli])],
+  imports: [SequelizeModule.forFeature([Bot, UserImg])],
   controllers: [],
-  providers: [BotService, SahiyService, SahiyUpdate, SabrliService, SabrliUpdate, BotUpdate],
-  exports: [BotService],
+  providers: [BotService, BotUpdate],
 })
 export class BotModule {}
